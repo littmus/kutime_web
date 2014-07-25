@@ -1,1 +1,42 @@
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+		<title>KUTIME_WEB</title>
+		
+        {% load staticfiles %}
+		{% load compress %} 
+        <link rel="stylesheet" href="http://bootswatch.com/flatly/bootstrap.min.css" type="text/css" />	
+		{% compress css %}
+		<link rel="stylesheet" href="{% static "css/base.css" %}" type="text/css" />
+		{% block cssfiles %}	
+		{% endblock %}
+		{% endcompress %}
+
+        <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+		{% compress js %}
+		{% block jsfiles %}
+		{% endblock %}
+		{% endcompress %}
+	</head>
+
+	<body>
+        <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+			<div class="container">
+                <div class="navbar-header">
+					<a class="navbar-brand" href="/">KUTIME_WEB</a>
+                </div>
+			</div>
+		</div>
+								
+		<div class="container container-fluid">
+			{% block contents %}
+			{% endblock %}
+
+			<footer>© sdw 2013 </footer>
+		</div>
+	</body>
+</html>

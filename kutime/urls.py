@@ -1,8 +1,9 @@
+from django.conf import settings
 from django.conf.urls import patterns, include, url
-
+from django.conf.urls.static import static
 from django.contrib import admin
 
-from models.sugang import *
+from models.kutime import *
 admin.autodiscover()
 admin.site.register(College)
 admin.site.register(Department)
@@ -14,4 +15,5 @@ urlpatterns = patterns('',
     # url(r'^blog/', include('blog.urls')),
 
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^$', 'kutime.views.index', name='index'),
 )
