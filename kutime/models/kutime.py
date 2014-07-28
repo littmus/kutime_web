@@ -140,7 +140,7 @@ class Lecture(models.Model):
     isRelative = models.BooleanField(default=True)
     isLimitStudent = models.BooleanField(default=True)
     isWaiting = models.BooleanField(default=True)
-    isExchnage = models.BooleanField(default=True)
+    isExchange = models.BooleanField(default=True)
 
     class Meta:
         app_label = 'kutime'

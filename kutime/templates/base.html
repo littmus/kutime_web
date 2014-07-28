@@ -16,7 +16,8 @@
 		{% endcompress %}
 
         <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
-        <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/localforage/0.9.1/localforage.min.js"></script>
 		{% compress js %}
 		{% block jsfiles %}
 		{% endblock %}
@@ -36,7 +37,12 @@
 			{% block contents %}
 			{% endblock %}
 
-			<footer>© sdw 2013 </footer>
+
 		</div>
+		<footer>
+            <div class="container">
+                <p>© <a href="mailto:littmuss@gmail.com" target="_blank">littmus</a> 2014</p>
+            </div>
+        </footer>
 	</body>
 </html>

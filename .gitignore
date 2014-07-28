@@ -55,3 +55,4 @@ docs/_build/
 
 *.sqlite3
 *.swp
+CACHE
