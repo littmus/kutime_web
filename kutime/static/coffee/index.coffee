@@ -1,9 +1,16 @@
 jQuery ->
 
     $(document).ready ->
+        v = localforage.getItem 'ip', (value) ->
+            if value is null
+                alert 'no value'
+                v = '127.0.0.1'
+                localForage.setItem 'ip', v
+        alert v
         cols = $('#cols')
         depts = $('#depts')
         lectures = $('#lectures')
+        timetable = $('#timetable')
 
         loadDept = (col_num) -> 
             depts.html ''
@@ -12,11 +19,16 @@ jQuery ->
                 url: 'dept/' + col_num + '/'
                 success: (retData) ->
                     for dept, i in retData
+                        option = $('<option></option>')
+                        option.val dept.pk
+                        option.text dept.fields.name
+
                         if i == 0
-                            depts.append '<option value="' + dept.pk + '" selected>' + dept.fields.name + '</option>'
+                            option.attr 'selected', 'selected'
                             loadLecture(dept.pk)
-                        else
-                            depts.append '<option value="' + dept.pk + '">' + dept.fields.name + '</option>'
+
+                        depts.append option
+
 
         loadLecture = (dept_num) ->
             lectures.html ''
@@ -27,21 +39,23 @@ jQuery ->
                     for lect in retData
                         lect = lect.fields
                         campus = if lect.campus == 'A' then '안암' else '세종'
-                        lecture = $('<tr class="lecture">' +
-                                    '<td>' + campus + '</td>' +
-                                    '<td>' + lect.number + '</td>' +
-                                    '<td>' + lect.placement + '</td>' +
-                                    '<td>' + lect.comp_div + '</td>' +
-                                    '<td>' + lect.title + '</td>' +
-                                    '<td>' + lect.professor + '</td>' +
-                                    '<td>' + lect.classroom + '</td>' +
-                                    '<td>' + lect.credit + ' (' + lect.time + ')</td>' +
-                                    '<td>' + lect.dayAndPeriod + '</td>' +
-                                    '<td>' + lect.isRelative + '</td>' +
-                                    '<td>' + lect.isLimitStudent + '</td>' +
-                                    '<td>' + lect.isWaiting + '</td>' +
-                                    '<td>' + lect.isExchange + '</td>' +
-                                    '</tr>')
+                        
+                        td = $('<td></td>')
+                        lecture = $('<tr class="lecture"></tr>')
+
+                        lecture.append td.clone().text campus
+                        lecture.append td.clone().text lect.number
+                        lecture.append td.clone().text lect.comp_div
+                        lecture.append td.clone().text lect.title
+                        lecture.append td.clone().text lect.professor
+                        lecture.append td.clone().text lect.classroom
+                        lecture.append td.clone().text lect.credit + ' (' + lect.time + ')'
+                        lecture.append td.clone().text lect.dayAndPeriod
+                        lecture.append td.clone().text lect.isRelative
+                        lecture.append td.clone().text lect.isLimitStudent
+                        lecture.append td.clone().text lect.isWaiting
+                        lecture.append td.clone().text lect.isExchange
+                        
                         lecture.data 'title', lect.title
                         lecture.data 'classroom', lect.classroom
                         lecture.data 'dp', lect.dayAndPeriod
@@ -57,22 +71,19 @@ jQuery ->
         }
             
 
-        Object.observe added_lectures, (changes) ->
-            console.log 'added'
-
-        Object.observe temp_lecture, (changes) ->
-            console.log 'temp'
-
         color_set = []
-        drawLecture = (lecture, start_pos, length, isTemp) ->
+        drawLecture = (lecture, start_cell, length, isTemp) ->
+            console.log start_cell
             lect_div_width = start_cell.css 'width'
             lect_div_height = (parseInt start_cell.css 'height') * length
-        
+            start_pos = start_cell.position()
+            """
             if isTemp
                 lect_div = temp_lecture
             else
                 lect_div = $('<div></div>')
-
+            """
+            lect_div = $('<div class="lecture_timetable"></div>')
             lect_div.css 'background-color', 'grey'
             lect_div.css 'position', 'absolute'
             lect_div.css 'top', start_pos.top
@@ -81,11 +92,25 @@ jQuery ->
             lect_div.height lect_div_height
 
             lect_div.text lecture.data 'title'
+            """
+            collision check need before draw
+            """
+            timetable.append lect_div
 
-            $('div#timetable').append lect_div
 
-        drawAllLectures = ->
-            
+        Object.observe added_lectures, (changes) ->
+            console.log added_lectures
+            timetable.text ''
+            for lec in added_lectures
+                drawLecture lec['lecture'], lec['start_cell'], lec['length'], lec['isTemp']
+
+        Object.observe temp_lecture, (changes) ->
+            console.log 'temp'
+        
+        $(window).resize -> 
+            timetable.text ''
+            for lec in added_lectures
+                drawLecture lec['lecture'], lec['start_cell'], lec['length'], lec['isTemp']
         
         days = ['월', '화', '수', '목', '금', '토']
         addLectureToTable = (lecture, isTemp) -> 
@@ -103,16 +128,27 @@ jQuery ->
                     period = dp[1].split '-'
                     period_start = period[0]
                     period_end = period[1][0]
-                
+                 
                 lect_info = [day, period_start, period_end]
+                console.log lect_info
+                """
                 if isTemp
                     temp_lecture = lect_info
                 else
                     added_lectures.push lect_info
-                
+                """
                 start_cell = $('td[data-pos=' + day + '-' + period_start + ']')
-                
+                console.log start_cell 
                 lect_length = if period_start == period_end then 1 else period_end - period_start + 1
+
+                _lec = {
+                    'lecture': lecture
+                    'start_cell': start_cell
+                    'length': lect_length
+                    'isTemp': isTemp
+                }
+
+                added_lectures.push _lec
 
 
         loadDept(cols.val())
@@ -134,7 +170,7 @@ jQuery ->
 
             if clicks == 1
                 timer = setTimeout(->
-                    addLectureToTable clicked_lect, true
+                    addLectureToTable clicked_lect, false
                     clicks = 0
                 , delay)
             else

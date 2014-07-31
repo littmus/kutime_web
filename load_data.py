@@ -12,7 +12,7 @@ URL_MAJOR = 'http://sugang.korea.ac.kr/lecture/LecMajorSub.jsp'
 URL_ETC = 'http://sugang.korea.ac.kr/lecture/LecEtcSub.jsp'
 URL_GRADUATE = 'http://sugang.korea.ac.kr/lecture/LecGradMajorSub.jsp'
 URL_DEPT = 'http://sugang.korea.ac.kr/lecture/LecDeptPopup.jsp?frm=frm_ms&colcd=%(colcd)s&deptcd=%(deptcd)s&dept=%(dept)s&year=%(year)s&term=%(term)s'
-RE_DEPT = re.compile(u'el.value ="(?P<num>\d{2,4})";\r\n            el.text = "(?P<name>[\uac00-\ud7a3\w ]+)";', re.UNICODE)
+RE_DEPT = re.compile(u'el.value ="(?P<num>\d{2,4})";\r\n            el.text = "(?P<name>[\uac00-\ud7a3\w ·]+)";', re.UNICODE)
 
 YEAR = 2014
 SEMESTER = '2R'
@@ -22,16 +22,19 @@ def index(URL):
     r = requests.get(URL)
     soup = bs(r.text)
     cols = soup.find('select', attrs={'name':'col'})
+
     for col in cols.find_all('option'):
+        if 'red' in col: 
+            continue
+                
         number = col['value']
-        name = col.text.rstrip()
+        name = col.text.strip()
         
         current_col = College(number=number, name=name)
         current_col.save()
 
         print name
-
-        dept_url = URL_DEPT % {'colcd':number, 'deptcd':'', 'dept':'dept', 'year':'2014', 'term':'2R'}
+        dept_url = URL_DEPT % {'colcd':number, 'deptcd':'', 'dept':'dept', 'year':YEAR, 'term':SEMESTER}
         r = requests.get(dept_url)
         
         _soup = bs(r.text)
@@ -39,16 +42,16 @@ def index(URL):
         m = [m.groupdict() for m in RE_DEPT.finditer(depts.text)]
         for dept in m:
             dept_num = str(dept['num'])
-            dept_name = dept['name'].rstrip()
+            dept_name = dept['name'].strip()
             
             print dept_name
 
             current_dept = Department(col=current_col, number=dept_num, name=dept_name)
             current_dept.save()
-
+            
             params = {
-                'yy': '2014',
-                'tm': '2R',
+                'yy': YEAR,
+                'tm': SEMESTER,
                 'col': number,
                 'dept': dept_num,
             }
@@ -67,7 +70,7 @@ def index(URL):
                     lec_num = lec_info[1].text
                     lec_placement = lec_info[2].text
                     lec_comp_div = lec_info[3].text
-                    lec_title = lec_info[4].text.lstrip().rstrip()
+                    lec_title = lec_info[4].text.strip()
                     lec_prof = lec_info[5].text
                     credit_time = str(lec_info[6].text).split('(')
                     lec_credit = int(credit_time[0])
@@ -83,12 +86,15 @@ def index(URL):
                             lec_classroom = classroom
                     
                         lec_date = ','.join(lec_date)
-                    except ValueError:
+                    except ValueError as e:
                         lec_date = None
                         lec_classroom = None
-
-                    print lec_date
-                    print lec_classroom 
+                    
+                    lec_is_english = True if u'(영강)' in lec_title else False
+                    lec_is_relative = False if lec_info[8].text == '' else True
+                    lec_is_limit = True
+                    lec_is_waiting = True
+                    lec_is_exchange = True
 
                     lecture = Lecture(
                                 year=YEAR, semester=SEMESTER, col=current_col, dept=current_dept,
@@ -99,9 +105,11 @@ def index(URL):
                     lecture.save()
             except Exception as e:
                 error_list.append([current_col, current_dept, str(e)])
-#            raw_input() 
-        for error in error_list:
-            print error
+
+        raw_input()
+    for error in error_list:
+        print error
+
 def run():
     index(URL_MAJOR)
 #    index(URL_ETC)

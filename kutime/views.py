@@ -5,6 +5,9 @@ import json
 
 from kutime.models.kutime import *
 
+def JsonResponse(json):
+    return HttpResponse(json, mimetype='application/json')
+
 def index(request):
     list_col = College.objects.all()
 
@@ -23,7 +26,7 @@ def dept(request, col_num):
         list_dept = Department.objects.filter(col__pk=col_num)
         data = serializers.serialize('json', list_dept, fields=('name'))
          
-    return HttpResponse(data, mimetype='application/json')
+    return JsonResponse(data)
 
 def lec(request, dept_num):
     data = None
@@ -31,5 +34,6 @@ def lec(request, dept_num):
         list_lec = Lecture.objects.filter(dept__pk=dept_num)
         data = serializers.serialize('json', list_lec)
 
-    return HttpResponse(data, mimetype='application/json')
+    return JsonResponse(data)
+
 
