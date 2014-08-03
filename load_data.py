@@ -92,21 +92,23 @@ def index(URL):
                     
                     lec_is_english = True if u'(영강)' in lec_title else False
                     lec_is_relative = False if lec_info[8].text == '' else True
-                    lec_is_limit = True
-                    lec_is_waiting = True
-                    lec_is_exchange = True
+                    lec_is_limit = False if lec_info[9].text == '' else True
+                    lec_is_waiting = False if lec_info[10].text == '' else True
+                    lec_is_exchange = False if lec_info[11].text == '' else True
 
                     lecture = Lecture(
                                 year=YEAR, semester=SEMESTER, col=current_col, dept=current_dept,
                                 campus='A', number=lec_num, placement=lec_placement, comp_div=lec_comp_div,
                                 title=lec_title, professor=lec_prof, credit=lec_credit, time=lec_time,
-                                dayAndPeriod=lec_date, classroom=lec_classroom
+                                dayAndPeriod=lec_date, classroom=lec_classroom,
+                                isEnglish=lec_is_english, isRelative=lec_is_relative,
+                                isLimitStudent=lec_is_limit, isWaiting=lec_is_waiting,
+                                isExchange=lec_is_exchange
                              )
                     lecture.save()
             except Exception as e:
                 error_list.append([current_col, current_dept, str(e)])
 
-        raw_input()
     for error in error_list:
         print error
 
