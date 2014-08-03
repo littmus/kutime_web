@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.core import serializers
+from django.views.decorators.csrf import csrf_exempt
 import json
 
 from kutime.models.kutime import *
@@ -22,6 +23,7 @@ def index(request):
         }
     )
 
+@csrf_exempt
 def dept(request, col_num):
     data = None
     if col_num is not None:
@@ -30,6 +32,7 @@ def dept(request, col_num):
          
     return JsonResponse(data)
 
+@csrf_exempt
 def lec(request, dept_num):
     data = None
     if dept_num is not None:

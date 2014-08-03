@@ -28,17 +28,17 @@
     }
 
     div.lecture_timetable {
-        border-radius: 10px;
+        border-radius: 8px;
         text-align: center;
-        font-size: 15px;
+        font-size: 1em;
         background-color: #18bc9c;
         color: #ffffff;
+        line-height: 150%;
     }
 
     table#timetable_table tr + tr {
-        height: 70px;
-        line-height: 70px;
-        max-height: 70px;
+        height: 50px;
+        max-height: 50px;
     }
 
 
@@ -49,6 +49,7 @@
             <ul class="nav nav-tabs" role="tablist">
                 <li class="active"><a href="#lecture_search_tab" role="tab" data-toggle="tab">강의 검색</a></li>
                 <li><a href="#lecture_selected_tab" role="tab" data-toggle="tab">넣은 강의</a></li>
+                <li class="pull-right"><a href="#" id="current_credit">강의 0 개 / 0 학점</a></li>
             </ul>
             <div class="tab-content">
                 <div class="tab-pane active" id="lecture_search_tab">
@@ -62,7 +63,9 @@
                                 <th>교과목명</th>
                                 <th>담당교수</th>
                                 <th>학점 (시간)</th>
-                                <th>강의시간/강의실</th>
+                                <th>강의시간</th>
+                                <th>강의실</th>
+                                <th>영강</th>
                                 <th>상대평가</th>
                                 <th>인원제한</th>
                                 <th>대기</th>
@@ -83,7 +86,9 @@
                                 <th>교과목명</th>
                                 <th>담당교수</th>
                                 <th>학점 (시간)</th>
-                                <th>강의시간/강의실</th>
+                                <th>강의시간</th>
+                                <th>강의실</th>
+                                <th>영강</th>
                                 <th>상대평가</th>
                                 <th>인원제한</th>
                                 <th>대기</th>
@@ -98,8 +103,8 @@
     </div>
     <div class="col-xs-12 col-md-2">
         <ul class="nav nav-tabs nav-justified" role="tablist">
-            <li class="active"><a href="#lecture_major" role="tab" data-toggle="tab">전공</a></li>
-            <li><a href="#lecture_etc" role="tab" data-toggle="tab">교양</a></li>
+            <li class="active"><a href="#lecture_major" role="tab" data-toggle="tab" id="tab_major">전공</a></li>
+            <li><a href="#lecture_etc" role="tab" data-toggle="tab" id="tab_etc">교양</a></li>
         </ul>
         <div class="tab-content">
             <div class="tab-pane active" id="lecture_major">

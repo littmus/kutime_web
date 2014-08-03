@@ -156,6 +156,7 @@ class Lecture(models.Model):
     isWaiting = models.BooleanField(default=True)
     isExchange = models.BooleanField(default=True)
 
+    note = models.TextField(null=True)
     class Meta:
         app_label = 'kutime'
         unique_together = (('number', 'placement'))
