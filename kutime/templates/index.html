@@ -2,20 +2,18 @@
 
 {% load staticfiles %}
 {% block jsfiles %}
+<script type="text/javascript" src="{% static "js/bootstrap-table.js" %}" charset="utf-8"></script>
 <script type="text/coffeescript" src="{% static "coffee/index.coffee" %}" charset="utf-8"></script>
+{% endblock %}
+
+{% block cssfiles %}
+<link rel="stylesheet" href="{% static "css/bootstrap-table.css" %}" type="text/css" />
 {% endblock %}
 
 {% block contents %}
 <style>
-    ul.nav-tabs li.active {
-        border-bottom: 1px solid #ecf0f1;
-    }
-    div.tab-pane > table {
-        border-top: none;
-    }
     div#lectures_wrapper {
-        height: 300px;
-        margin-bottom: 50px;
+        margin-bottom: 20px;
     }
 
     div#lectures_wrapper tr {
@@ -30,18 +28,30 @@
     }
 
     div.lecture_timetable {
-        border-radius: 5px;
+        border-radius: 10px;
+        text-align: center;
+        font-size: 15px;
+        background-color: #18bc9c;
+        color: #ffffff;
     }
+
+    table#timetable_table tr + tr {
+        height: 70px;
+        line-height: 70px;
+        max-height: 70px;
+    }
+
+
 </style>
 <div class="row row-fluid">
     <div class="col-xs-12 col-md-10">
         <div id="lectures_wrapper">
             <ul class="nav nav-tabs" role="tablist">
-                <li class="active"><a href="#lecture_search" role="tab" data-toggle="tab">강의 검색</a></li>
-                <li><a href="#lecture_selected" role="tab" data-toggle="tab">넣은 강의</a></li>
+                <li class="active"><a href="#lecture_search_tab" role="tab" data-toggle="tab">강의 검색</a></li>
+                <li><a href="#lecture_selected_tab" role="tab" data-toggle="tab">넣은 강의</a></li>
             </ul>
             <div class="tab-content">
-                <div class="tab-pane active" id="lecture_search">
+                <div class="tab-pane active" id="lecture_search_tab">
                     <table id="lectures" class="table table-bordered table-hover">
                         <thead>
                             <tr>
@@ -59,11 +69,10 @@
                                 <th>교환학생</th>
                             </tr>
                         </thead>
-                        <tbody>
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
-                <div class="tab-pane" id="lecture_selected">
+                <div class="tab-pane" id="lecture_selected_tab">
                     <table id="lectures_selected" class="table table-bordered table-hover">
                         <thead>
                             <tr>
@@ -81,39 +90,69 @@
                                 <th>교환학생</th>
                             </tr>
                         </thead>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-xs-12 col-md-2">
-        <select id="cols">
-        {% for col in cols %}
-            {% ifequal forloop.counter0 0 %}
-            <option value="{{ col.number }}" selected>{{ col.name }}</option>
-            {% else %}
-            <option value="{{ col.number }}">{{ col.name }}</option>
-            {% endifequal %}
-        {% endfor %}
-        </select>
-    
-        <select id="depts">
-        </select>
-
-        <input type="text" placeholder="검색" />
+        <ul class="nav nav-tabs nav-justified" role="tablist">
+            <li class="active"><a href="#lecture_major" role="tab" data-toggle="tab">전공</a></li>
+            <li><a href="#lecture_etc" role="tab" data-toggle="tab">교양</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active" id="lecture_major">
+                <form role="form" style="margin-top:15px;">
+                    <div class="form-group">
+                        <select id="cols_major" class="form-control">
+                        {% for col in cols_major %}
+                            {% ifequal forloop.counter0 0 %}
+                            <option value="{{ col.number }}" selected>{{ col.name }}</option>
+                            {% else %}
+                            <option value="{{ col.number }}">{{ col.name }}</option>
+                            {% endifequal %}
+                        {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <select id="depts_major" class="form-control"></select>
+                    </div>
+                </form>
+            </div>
+            <div class="tab-pane" id="lecture_etc">
+                <form role="form" style="margin-top:15px;">
+                    <div class="form-group">
+                        <select id="cols_etc" class="form-control">
+                        {% for col in cols_etc %}
+                            {% ifequal forloop.counter0 0 %}
+                            <option value="{{ col.number }}" selected>{{ col.name }}</option>
+                            {% else %}
+                            <option value="{{ col.number }}">{{ col.name }}</option>
+                            {% endifequal %}
+                        {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <select id="depts_etc" class="form-control"></select>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!--<input type="text" placeholder="" />-->
     </div>
 </div>
 <div class="row row-fluid">
     <div class="col-xs-12 col-md-12">
         <div id="timetable"></div>
-        <table class="table table-bordered">
+        <table id="timetable_table" class="table table-bordered">
             <tr>
             {% for d in " 월화수목금토" %}
                 <td>{{ d }}</td>
             {% endfor %}
             {% for i in timetable_range %}
             <tr>
-                <td>{{ i }} 교시</td>
+                <td class="col-md-1">{{ i }} 교시</td>
                 {% for d in "012345" %}
                 <td data-pos="{{d}}-{{i}}"></td>
                 {% endfor %}

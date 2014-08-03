@@ -9,13 +9,15 @@ def JsonResponse(json):
     return HttpResponse(json, mimetype='application/json')
 
 def index(request):
-    list_col = College.objects.all()
+    list_col_major = College.objects.filter(type='M')
+    list_col_etc = College.objects.filter(type='E')
 
     return render(
         request,
         'index.html',
         {
-            'cols': list_col,
+            'cols_major': list_col_major,
+            'cols_etc': list_col_etc,
             'timetable_range': range(12),
         }
     )

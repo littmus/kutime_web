@@ -6,6 +6,13 @@ class College(models.Model):
     number = models.CharField(max_length=4, primary_key=True)
     name = models.CharField(max_length=50)
 
+    CHOICES_TYPE = (
+        ('M', 'MAJOR'),
+        ('E', 'ETC'),
+        ('G', 'GRADUATE'),
+    )
+    type = models.CharField(max_length=1, choices=CHOICES_TYPE)
+
     class Meta:
         app_label = 'kutime'
 
@@ -18,6 +25,13 @@ class Department(models.Model):
     
     number = models.CharField(max_length=4, primary_key=True)
     name = models.CharField(max_length=50)
+
+    CHOICES_TYPE = (
+        ('M', 'MAJOR'),
+        ('E', 'ETC'),
+        ('G', 'GRADUATE'),
+    )
+    type = models.CharField(max_length=1, choices=CHOICES_TYPE)
 
     class Meta:
         app_label = 'kutime'
