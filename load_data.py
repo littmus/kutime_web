@@ -186,7 +186,7 @@ def index(_type):
         print error
 
 def run():
-    #index(MAJOR)
+    index(MAJOR)
     index(ETC)
     #index(GRADUATE)
 
