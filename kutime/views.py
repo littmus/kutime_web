@@ -1,24 +1,27 @@
+import json
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.core import serializers
 from django.views.decorators.csrf import csrf_exempt
-import json
 
 from kutime.models.kutime import *
+
 
 def JsonResponse(json):
     return HttpResponse(json, mimetype='application/json')
 
 def index(request):
     list_col_major = College.objects.filter(type='M')
-    list_col_etc = College.objects.filter(type='E')
+    list_col_etc_anam = College.objects.filter(type='E', campus='A')
+    list_col_etc_sejong = College.objects.filter(type='E', campus='S')
 
     return render(
         request,
         'index.html',
         {
             'cols_major': list_col_major,
-            'cols_etc': list_col_etc,
+            'cols_etc_anam': list_col_etc_anam,
+            'cols_etc_sejong': list_col_etc_sejong,
             'timetable_range': range(12),
         }
     )
@@ -40,5 +43,4 @@ def lec(request, dept_num):
         data = serializers.serialize('json', list_lec)
 
     return JsonResponse(data)
-
 

@@ -15,7 +15,7 @@ URL_GRADUATE = 'http://sugang.korea.ac.kr/lecture/LecGradMajorSub.jsp'
 URL_DEPT_MAJOR = 'http://sugang.korea.ac.kr/lecture/LecDeptPopup.jsp?frm=frm_ms&colcd=%(colcd)s&deptcd=%(deptcd)s&dept=%(dept)s&year=%(year)s&term=%(term)s'
 URL_DEPT_ETC = 'http://sugang.korea.ac.kr/lecture/LecDeptPopup.jsp?frm=frm_ets&colcd=%(colcd)s&deptcd=%(deptcd)s&dept=%(dept)s'
 
-RE_DEPT = re.compile(u'el.value ="(?P<num>\d{2,4})";\r\n            el.text = "(?P<name>[\uac00-\ud7a3\w ·]+)";', re.UNICODE)
+RE_DEPT = re.compile(u'el.value ="(?P<num>\d{2,4})";\r\n            el.text = "(?P<name>[\(\)\uac00-\ud7a3\w ·]+)";', re.UNICODE)
 RE_DC = re.compile(u'(?P<day>[\uac00-\ud7a3]{1}\([\d-]+\)) (?P<classroom>[\uac00-\ud7a3\w\d\- ]*(?=[\uac00-\ud7a3\w\d\- ])\d\S)', re.UNICODE)
 RE_DC_DAYONLY = re.compile(u'(?P<day>[\uac00-\ud7a3]{1}\([\d-]+\))', re.UNICODE)
 YEAR = 2014
@@ -67,10 +67,13 @@ def index(_type):
         _soup = bs(r.text)
         depts = _soup.find('script')
         m = [m.groupdict() for m in RE_DEPT.finditer(depts.text)]
-        for dept in m:
-            if 'red' in dept:
+    	if len(m) == 0:
+            if _type == MAJOR:
                 continue
+            elif _type == ETC:
+                m.append({'num': number, 'name': name,})
 
+        for dept in m:
             dept_num = str(dept['num'])
             dept_name = dept['name'].strip()
             
@@ -86,6 +89,9 @@ def index(_type):
                 'dept': dept_num,
             }
 
+            if dept_num == number:
+                del params['dept']
+
             if _type == ETC:
                 params['campus'] = '1'
 
@@ -94,20 +100,31 @@ def index(_type):
             table = lec_soup.find_all('table')[TABLE_INDEX]
             if u'검색결과가' in table.text:
                 continue
-            
+                
             try:
                 for lec_row in table.find_all('tr')[3::2]:
                     lec_info = lec_row.find_all('td')[::2]
                     
                     if _type == MAJOR:
                         lec_campus = 'A' if lec_info[0].text == u'안암' else 'S'
-                        lec_num = lec_info[1].text.strip()
+                        lec_num = lec_info[1].text.strip().replace(' ', '')
                         lec_placement = lec_info[2].text.strip()
                         lec_comp_div = lec_info[3].text.strip()
-                        if 'br' in lec_info[4]:
-                            print lec_info[4]
-                            raw_input()
-                        lec_title = lec_info[4].text.strip()
+                        
+                        if lec_info[4].find('br') is not None:
+                            lec_title, lec_note = lec_info[4].contents
+                            lec_title = unicode(lec_title)
+                            lec_title = lec_title.strip()
+                            lec_note = lec_note.text.strip()
+                        else:
+                            title_note = lec_info[4].text.strip().split(' ', 1)
+                            lec_title = title_note[0]
+                            if len(title_note) == 2:
+                                lec_note = title_note[1]
+                            else:
+                                lec_note = ''
+                        if dept_num == '23':
+                            print lec_title, lec_note
                         lec_prof = lec_info[5].text.strip()
                         credit_time = str(lec_info[6].text.strip()).split('(')
                         lec_credit = int(credit_time[0])
@@ -125,9 +142,22 @@ def index(_type):
                         lec_num = lec_info[0].text.strip()
                         lec_placement = lec_info[1].text.strip()
                         lec_comp_div = ''
-                        if 'br' in lec_info[2]:
-                            print lec_info[2]
-                            raw_input()
+
+
+                        if lec_info[2].find('br') is not None:
+                            lec_title, lec_note = lec_info[2].contents
+                            lec_title = unicode(lec_title)
+                            lec_title = lec_title.strip()
+                            lec_note = lec_note.text.strip()
+                        else:
+                            title_note = lec_info[2].text.strip().split(' ', 1)
+                            lec_title = title_note[0]
+
+                            if len(title_note) == 2:
+                                lec_note = title_note[1]
+                            else:
+                                lec_note = ''
+
                         lec_title = lec_info[2].text.strip()
                         lec_prof = lec_info[3].text.strip()
                         credit_time = str(lec_info[4].text.strip()).split('(')
@@ -163,7 +193,6 @@ def index(_type):
                             lec_date = None
                             lec_classroom = None
 
-                    print lec_date, lec_classroom
 
                     lec_note = ''
 

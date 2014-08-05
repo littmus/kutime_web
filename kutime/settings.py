@@ -21,7 +21,7 @@ SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
 SECRET_KEY = '6c+8xg$bv46#gein%f+y=r5iunot*pi^psk%!clrlex-i&-_xy'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 COMPRESS_ENABLED = not DEBUG
 TEMPLATE_DEBUG = DEBUG
 
@@ -39,8 +39,9 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 
     'compressor',
-    'debug_toolbar',
+#    'debug_toolbar',
     'haystack',
+    'watson',
 
     'kutime',
 )
@@ -66,8 +67,12 @@ WSGI_APPLICATION = 'kutime.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'kutime',
+	    'USER': 'kutime',
+    	'PASSWORD': 'kutime',
+    	'HOST': 'localhost',
+    	'PORT': '',
     }
 }
 
@@ -108,7 +113,8 @@ COMPRESS_PRECOMPILERS = (
 HAYSTACK_CONNECTIONS = {
     'default': {
         'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
-        'PATH': os.path.join(SITE_ROOT, 'whoosh_index'),
+        #'PATH': os.path.join(SITE_ROOT, 'whoosh_index'),
+        'PATH': '/var/tmp/kutime_whoosh_index',
     },
 }
 

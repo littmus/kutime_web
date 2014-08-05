@@ -110,7 +110,8 @@ jQuery ->
                 span = span_template.clone()
                 txt = lecture.title
                 txt += '<br/>'
-                txt += lecture.classroom
+                if lecture.classroom != null
+                    txt += lecture.classroom
                 span.html txt
                 lect_div.html txt
 

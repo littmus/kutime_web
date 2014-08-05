@@ -1,6 +1,7 @@
 #-*- coding:utf-8 -*-
-
 from django.db import models
+import watson
+
 
 class College(models.Model):
     number = models.CharField(max_length=4, primary_key=True)
@@ -127,8 +128,8 @@ class Lecture(models.Model):
     number = models.CharField(max_length=7)
     placement = models.CharField(max_length=2)
     comp_div = models.CharField(max_length=20)
-    title = models.CharField(max_length=100)
-    professor = models.CharField(max_length=100)
+    title = models.CharField(max_length=200)
+    professor = models.CharField(max_length=200)
 
     credit = models.IntegerField()
     time = models.IntegerField()
@@ -175,4 +176,6 @@ class Lecture(models.Model):
 
     def __unicode__(self):
         return u'%s - %s' % (self.title, self.professor)
+
+watson.register(Lecture)
 
