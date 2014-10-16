@@ -1,13 +1,17 @@
+# lo-dash custom template delimiters
+_.templateSettings.interpolate = /{{([\s\S]+?)}}/g
+
 jQuery ->
-    $.extend $.fn.bootstrapTable.defaults,
+   $.extend $.fn.bootstrapTable.defaults,
         formatNoMatches: ->
-            '추가한 강의가 없습니다.'
+            '강의가 없습니다.'
 
     lecture_template = $('<tr class="lecture"></tr>')
     td = $('<td></td>')
     lect_template = $('<div class="lecture_timetable"></div>')
     span_template = $('<span></span>')
     option_template = $('<option></option>')
+
 
     $(document).ready ->
         v = localforage.getItem 'ip', (value) ->
@@ -22,12 +26,11 @@ jQuery ->
         lectures = $('#lectures > tbody')
         lectures_selected = $('#lectures_selected > tbody')
         timetable = $('#timetable')
+        search_input = $('#search_input')
         
         getLectureRow = (lect) ->
             lecture = lecture_template.clone()
-
-            campus = if lect.campus == 'A' then '안암' else '세종'
-            lecture.append td.clone().text campus
+            
             lecture.append td.clone().text lect.number
             lecture.append td.clone().text lect.placement
             lecture.append td.clone().text lect.comp_div
@@ -35,7 +38,7 @@ jQuery ->
             lecture.append td.clone().text lect.professor
             lecture.append td.clone().text lect.credit + ' (' + lect.time + ')'
             lecture.append td.clone().text lect.dayAndPeriod
-            if lect.classroom is null
+            if _.isNull lect.classroom
                 lecture.append td.clone()
             else
                 lecture.append td.clone().text lect.classroom
@@ -47,10 +50,9 @@ jQuery ->
 
             return lecture
 
-        loadDept = (col_num, type) -> 
+        loadDept = (col_num, type) ->
             depts = if type is 'M' then depts_major else depts_etc
             depts.html ''
-
             ret = $.ajax
                 type: 'get'
                 url: 'dept/' + col_num + '/'
@@ -82,11 +84,32 @@ jQuery ->
                         lecture.data 'lecture', lect
                         lectures.append lecture
 
+
+        searchLecture = (q) ->
+            lectures.html ''
+            ret = $.ajax
+                type: 'get'
+                url: 'search/' + q + '/'
+                dataType: 'json'
+                success: (retData) ->
+                    for lect in retData
+                        lect = lect.fields
+
+                        lecture = getLectureRow lect
+                        lecture.data 'lecture', lect
+                        lectures.append lecture
+
+
+        search_input.keyup (e) ->
+            if e.keyCode == 13
+                q = $(this).val()
+                searchLecture q
+
         lect_div_base_width = 
         lect_div_base_height = 
         
         added_lectures = []
-        color_set = []
+        color_set = ['#1abc9c', '#2ecc71', '#3498db', '#9b59b6', '#34495e']
         used_color_set = []
         drawLecture = (lecture, cell_length, isTemp, index) ->
             for cl in cell_length
@@ -110,12 +133,12 @@ jQuery ->
                 span = span_template.clone()
                 txt = lecture.title
                 txt += '<br/>'
-                if lecture.classroom != null
+                if not _.isNull lecture.classroom
                     txt += lecture.classroom
                 span.html txt
                 lect_div.html txt
 
-                if index != null
+                if not _.isNull index
                     lect_div.data 'index', index
                 
                 if cl.length == 1
@@ -127,20 +150,26 @@ jQuery ->
 
 
         Object.observe added_lectures, (changes) ->
-            console.log added_lectures
             timetable.text ''
             lectures_selected.html ''
             current_credit = 0
-
+            
             for lec, index in added_lectures
                 lecture = lec['lecture']
                 drawLecture lecture, lec['cell_length'], lec['isTemp'], index
                 lectures_selected.append getLectureRow lecture
                 current_credit += lecture.credit
+            
+            t = _.template '강의 {{ l }} 개 / {{ c }} 학점', {
+                'l': added_lectures.length
+                'c': current_credit
+            }
+            
+            console.log t
 
-            $('#current_credit').text '강의 ' + added_lectures.length + ' 개 / ' + current_credit + ' 학점'
+            $('#current_credit').text t
         
-        $(window).resize -> 
+        $(window).resize ->
             timetable.text ''
             for lec, index in added_lectures
                 drawLecture lec['lecture'], lec['cell_length'], lec['isTemp'], index
@@ -165,14 +194,11 @@ jQuery ->
                     period_end = period[1][0]
                  
                 lect_info = [day, period_start, period_end]
-                console.log lect_info
 
                 start_cell = $('td[data-pos=' + day + '-' + period_start + ']')
-                console.log start_cell
 
                 if isTemp == false
                     full = start_cell.data 'full'
-                    console.log full
                     if full is undefined or full is false
                         start_cell.data 'full', true
                     else
@@ -200,7 +226,7 @@ jQuery ->
             added_lectures.push _lec
 
 
-        loadDept cols_etc.val(), 'E'
+#        loadDept cols_etc.val(), 'E'
         loadDept cols_major.val(), 'M'
 
         cols_major.change ->

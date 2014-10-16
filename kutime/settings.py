@@ -22,7 +22,7 @@ SECRET_KEY = '6c+8xg$bv46#gein%f+y=r5iunot*pi^psk%!clrlex-i&-_xy'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-COMPRESS_ENABLED = not DEBUG
+#COMPRESS_ENABLED = not DEBUG
 TEMPLATE_DEBUG = DEBUG
 
 ALLOWED_HOSTS = ['127.0.0.1',]
@@ -39,12 +39,15 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 
     'compressor',
-#    'debug_toolbar',
-    'haystack',
     'watson',
 
     'kutime',
 )
+
+if DEBUG:
+    INSTALLED_APPS += (
+        'debug_toolbar',
+    )
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -79,7 +82,7 @@ DATABASES = {
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ko-kr'
 
 TIME_ZONE = 'UTC'
 
@@ -94,37 +97,37 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
-#STATIC_ROOT = os.path.join(SITE_ROOT, 'static')
-STATIC_ROOT = '/var/www/kutime/static/'
+if DEBUG:
+    STATIC_ROOT = os.path.join(SITE_ROOT, 'static')
+else:
+    STATIC_ROOT = '/var/www/kutime/static/'
+
 STATICFILES_DIR = (
     os.path.join(SITE_ROOT, 'static'),
-    '/var/www/kutime/static/',
+
 )
+if not DEBUG:
+    STATICFILES_DIR += (
+        '/var/www/kutime/static/',
+    )
 
 STATICFILES_FINDERS = settings.STATICFILES_FINDERS + (
     'compressor.finders.CompressorFinder',
 )
 
-
 COMPRESS_PRECOMPILERS = (
     ('text/coffeescript', 'coffee --compile --stdio'),
 )
 
-HAYSTACK_CONNECTIONS = {
-    'default': {
-        'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
-        #'PATH': os.path.join(SITE_ROOT, 'whoosh_index'),
-        'PATH': '/var/tmp/kutime_whoosh_index',
-    },
-}
-
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-        'LOCATION': '/var/tmp/kutime_cache',
-        'TIMEOUT': 3600,
-        'OPTIONS': {
-            'MAX_ENTRIES': 512
+if not DEBUG:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+            'LOCATION': '/var/tmp/kutime_cache',
+            'TIMEOUT': 3600,
+            'OPTIONS': {
+                'MAX_ENTRIES': 512
+            }
         }
     }
-}
+

@@ -4,18 +4,27 @@ import watson
 
 
 class College(models.Model):
-    number = models.CharField(max_length=4, primary_key=True)
+    number = models.CharField(max_length=4)
     name = models.CharField(max_length=50)
 
+    CHOICES_CAMPUS = (
+        ('A', u'안암'),
+        ('S', u'세종'),
+        ('G', u'대학원'),
+        ('E', u'기타'),
+    )
+    campus = models.CharField(max_length=1, choices=CHOICES_CAMPUS, null=True)
+
     CHOICES_TYPE = (
-        ('M', 'MAJOR'),
-        ('E', 'ETC'),
-        ('G', 'GRADUATE'),
+        ('M', u'학부 전공'),
+        ('E', u'학부 교양/교직/기타'),
+        ('G', u'대학원 전공'),
     )
     type = models.CharField(max_length=1, choices=CHOICES_TYPE)
 
     class Meta:
         app_label = 'kutime'
+        unique_together = (('number', 'campus'))
 
     def __unicode__(self):
         return self.name
@@ -26,13 +35,6 @@ class Department(models.Model):
     
     number = models.CharField(max_length=4, primary_key=True)
     name = models.CharField(max_length=50)
-
-    CHOICES_TYPE = (
-        ('M', 'MAJOR'),
-        ('E', 'ETC'),
-        ('G', 'GRADUATE'),
-    )
-    type = models.CharField(max_length=1, choices=CHOICES_TYPE)
 
     class Meta:
         app_label = 'kutime'
@@ -117,14 +119,6 @@ class Lecture(models.Model):
     col = models.ForeignKey(College)
     dept = models.ForeignKey(Department)
 
-    CHOICES_CAMPUS = (
-        ('A', u'안암'),
-        ('S', u'세종'),
-        ('G', u'대학원'),
-        ('E', u'기타'),
-    )
-    campus = models.CharField(max_length=1, choices=CHOICES_CAMPUS)
-
     number = models.CharField(max_length=7)
     placement = models.CharField(max_length=2)
     comp_div = models.CharField(max_length=20)
@@ -134,20 +128,6 @@ class Lecture(models.Model):
     credit = models.IntegerField()
     time = models.IntegerField()
 
-    CHOICES_DAY = (
-        (1, '월'),
-        (2, '화'),
-        (3, '수'),
-        (4, '목'),
-        (5, '금'),
-        (6, '토'),
-        (0, '일'),
-    )
-    """
-    days = MultiSelectField(choices=CHOICES_DAY)
-    classtime_start = models.IntegerField()
-    classtime_end = models.IntegerField(null=True)
-    """
     dayAndPeriod = DayAndPeriodField(max_length=500, null=True)
     classroom = models.CharField(max_length=50, null=True)
 
@@ -158,6 +138,7 @@ class Lecture(models.Model):
     isExchange = models.BooleanField(default=True)
 
     note = models.TextField(null=True)
+
     class Meta:
         app_label = 'kutime'
         unique_together = (('number', 'placement'))

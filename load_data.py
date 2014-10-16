@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+
 import os
 import time
 import re
@@ -6,7 +7,6 @@ import requests
 from bs4 import BeautifulSoup as bs
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'kutime.settings'
-
 from kutime.models.kutime import *
 
 URL_MAJOR = 'http://sugang.korea.ac.kr/lecture/LecMajorSub.jsp'
@@ -17,15 +17,21 @@ URL_DEPT_ETC = 'http://sugang.korea.ac.kr/lecture/LecDeptPopup.jsp?frm=frm_ets&c
 
 RE_DEPT = re.compile(u'el.value ="(?P<num>\d{2,4})";\r\n            el.text = "(?P<name>[\(\)\uac00-\ud7a3\w ·]+)";', re.UNICODE)
 RE_DC = re.compile(u'(?P<day>[\uac00-\ud7a3]{1}\([\d-]+\)) (?P<classroom>[\uac00-\ud7a3\w\d\- ]*(?=[\uac00-\ud7a3\w\d\- ])\d\S)', re.UNICODE)
-RE_DC_DAYONLY = re.compile(u'(?P<day>[\uac00-\ud7a3]{1}\([\d-]+\))', re.UNICODE)
+RE_DC_DAYONLY = re.compile(u'(?P<day>[\uac00-\ud7a3]{1}\[\d-]+\))', re.UNICODE)
+
 YEAR = 2014
 SEMESTER = '2R'
 
 MAJOR = 'M'
 ETC = 'E'
+ANAM = 'A'
+SEJONG = 'S'
 GRADUATE = 'G'
 
-def index(_type):
+DEBUG = False
+global_error_list = []
+
+def index(_type, campus=None):
     if _type == MAJOR:
         URL = URL_MAJOR
         URL_DEPT = URL_DEPT_MAJOR
@@ -38,7 +44,7 @@ def index(_type):
         URL = URL_GRADUATE
         TABLE_INDEX = -1
 
-    error_list = []
+
     r = requests.get(URL)
     soup = bs(r.text)
     cols = soup.find('select', attrs={'name':'col'})
@@ -51,19 +57,26 @@ def index(_type):
         name = col.text.strip()
         
         current_col = College(number=number, name=name, type=_type)
-        current_col.save()
-
-        print name
+        if campus is not None:
+            current_col.campus = campus
+    
+        if not DEBUG:
+            current_col.save()
+        
+        if DEBUG:
+            print name
 
         if _type == MAJOR:
             dept_url = URL_DEPT % {'colcd':number, 'deptcd':'', 'dept':'dept', 'year':YEAR, 'term':SEMESTER}
         elif _type == ETC:
-            dept_url = URL_DEPT % {'colcd':number, 'deptcd':'', 'dept':'dept', 'campus':'1'}
+            dept_url = URL_DEPT % {'colcd':number, 'deptcd':'', 'dept':'dept'}
         elif _type == GRADUATE:
-            print ''
-
-        r = requests.get(dept_url)
+            pass
         
+        if DEBUG:
+            print dept_url
+        
+        r = requests.get(dept_url)
         _soup = bs(r.text)
         depts = _soup.find('script')
         m = [m.groupdict() for m in RE_DEPT.finditer(depts.text)]
@@ -77,10 +90,12 @@ def index(_type):
             dept_num = str(dept['num'])
             dept_name = dept['name'].strip()
             
-            print dept_name
+            if DEBUG:
+                print dept_name
 
-            current_dept = Department(col=current_col, number=dept_num, name=dept_name, type=_type)
-            current_dept.save()
+            current_dept = Department(col=current_col, number=dept_num, name=dept_name)
+            if not DEBUG:
+                current_dept.save()
             
             params = {
                 'yy': YEAR,
@@ -93,7 +108,7 @@ def index(_type):
                 del params['dept']
 
             if _type == ETC:
-                params['campus'] = '1'
+                params['campus'] = '1' if campus == ANAM else '2'
 
             r = requests.post(URL, params=params)
             lec_soup = bs(r.text)
@@ -105,8 +120,11 @@ def index(_type):
                 for lec_row in table.find_all('tr')[3::2]:
                     lec_info = lec_row.find_all('td')[::2]
                     
-                    if _type == MAJOR:
-                        lec_campus = 'A' if lec_info[0].text == u'안암' else 'S'
+                    if _type == MAJOR: 
+                        if current_col.campus is None:
+                            current_col.campus = 'A' if lec_info[0].text == u'안암' else 'S'
+                            current_col.save()
+
                         lec_num = lec_info[1].text.strip().replace(' ', '')
                         lec_placement = lec_info[2].text.strip()
                         lec_comp_div = lec_info[3].text.strip()
@@ -123,8 +141,11 @@ def index(_type):
                                 lec_note = title_note[1]
                             else:
                                 lec_note = ''
+                        """
                         if dept_num == '23':
                             print lec_title, lec_note
+                        """
+
                         lec_prof = lec_info[5].text.strip()
                         credit_time = str(lec_info[6].text.strip()).split('(')
                         lec_credit = int(credit_time[0])
@@ -138,7 +159,6 @@ def index(_type):
                         lec_is_waiting = False if lec_info[10].text == '' else True
                         lec_is_exchange = False if lec_info[11].text == '' else True
                     elif _type == ETC:
-                        lec_campus = 'A'
                         lec_num = lec_info[0].text.strip()
                         lec_placement = lec_info[1].text.strip()
                         lec_comp_div = ''
@@ -151,12 +171,14 @@ def index(_type):
                             lec_note = lec_note.text.strip()
                         else:
                             title_note = lec_info[2].text.strip().split(' ', 1)
+                            
                             lec_title = title_note[0]
 
                             if len(title_note) == 2:
                                 lec_note = title_note[1]
                             else:
                                 lec_note = ''
+                            print lec_title, lec_note
 
                         lec_title = lec_info[2].text.strip()
                         lec_prof = lec_info[3].text.strip()
@@ -192,13 +214,11 @@ def index(_type):
                             print str(e)
                             lec_date = None
                             lec_classroom = None
-
-
-                    lec_note = ''
+                            global_error_list.append([_type, current_col, current_dept, str(e)])
 
                     lecture = Lecture(
                                 year=YEAR, semester=SEMESTER, col=current_col, dept=current_dept,
-                                campus=lec_campus, number=lec_num, placement=lec_placement, comp_div=lec_comp_div,
+                                number=lec_num, placement=lec_placement, comp_div=lec_comp_div,
                                 title=lec_title, professor=lec_prof, credit=lec_credit, time=lec_time,
                                 dayAndPeriod=lec_date, classroom=lec_classroom,
                                 isEnglish=lec_is_english, isRelative=lec_is_relative,
@@ -206,18 +226,22 @@ def index(_type):
                                 isExchange=lec_is_exchange,
                                 note=lec_note
                              )
-                    lecture.save()
+                    if not DEBUG:
+                        lecture.save()
+
             except Exception as e:
                 print str(e)
-                error_list.append([current_col, current_dept, str(e)])
+                global_error_list.append([_type, current_col, current_dept, str(e)])
 
-    for error in error_list:
-        print error
 
 def run():
     index(MAJOR)
-    index(ETC)
+    index(ETC, ANAM)
+    index(ETC, SEJONG)
     #index(GRADUATE)
+
+    for error in global_error_list:
+        print error
 
 if __name__ == '__main__':
     run()

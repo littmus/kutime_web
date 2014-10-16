@@ -17,5 +17,6 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
     url(r'^dept/(?P<col_num>\d{2,4})/$', 'kutime.views.dept', name='dept'),
     url(r'^lec/(?P<dept_num>[\w|\d]+)/$', 'kutime.views.lec', name='lec'),
+    url(r'^search/(?P<q>\S+)/$', 'kutime.views.search', name='search'),
     url(r'^$', 'kutime.views.index', name='index'),
 )
