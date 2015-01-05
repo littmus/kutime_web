@@ -2,16 +2,15 @@
 _.templateSettings.interpolate = /{{([\s\S]+?)}}/g
 
 jQuery ->
-   $.extend $.fn.bootstrapTable.defaults,
-        formatNoMatches: ->
-            '강의가 없습니다.'
+#   $.extend $.fn.bootstrapTable.defaults,
+#        formatNoMatches: ->
+#            '강의가 없습니다.'
 
     lecture_template = $('<tr class="lecture"></tr>')
     td = $('<td></td>')
     lect_template = $('<div class="lecture_timetable"></div>')
     span_template = $('<span></span>')
     option_template = $('<option></option>')
-
 
     $(document).ready ->
         v = localforage.getItem 'ip', (value) ->
@@ -30,11 +29,13 @@ jQuery ->
         
         getLectureRow = (lect) ->
             lecture = lecture_template.clone()
-            
+            lecture.attr 'id', lect.number + '-' + lect.placement
+
             lecture.append td.clone().text lect.number
             lecture.append td.clone().text lect.placement
             lecture.append td.clone().text lect.comp_div
-            lecture.append td.clone().text lect.title
+
+            lecture.append td.clone().html lect.title
             lecture.append td.clone().text lect.professor
             lecture.append td.clone().text lect.credit + ' (' + lect.time + ')'
             lecture.append td.clone().text lect.dayAndPeriod
@@ -48,6 +49,8 @@ jQuery ->
             lecture.append td.clone().text if lect.isWaiting then '●' else ''
             lecture.append td.clone().text if lect.isExchange then '●' else ''
 
+            lecture.append td.clone().text lect.note
+            
             return lecture
 
         loadDept = (col_num, type) ->
@@ -61,29 +64,39 @@ jQuery ->
                     
                     for dept, i in retData
                         option = option_template.clone()
-                        option.val dept.pk
+                        number = dept.fields.number
+                        option.val number
                         option.text dept.fields.name
 
                         if i == 0
                             option.attr 'selected', 'selected'
-                            loadLecture(dept.pk)
+                            
+                            if type == 'M'
+                                loadLecture number, ''
+                            else if type == 'E'
+                                if $('option:selected', cols_etc).closest('optgroup').index() == 0
+                                    loadLecture number, 'A'
+                                else
+                                    loadLecture number, 'S'
 
                         depts.append option
 
-        loadLecture = (dept_num) ->
+        loadLecture = (dept_num, campus) ->
             lectures.html ''
             ret = $.ajax
                 type: 'get'
-                url: 'lec/' + dept_num + '/'
+                url: 'lec/' + campus + dept_num + '/'
                 dataType: 'json'
                 success: (retData) ->
                     for lect in retData
                         lect = lect.fields
 
                         lecture = getLectureRow lect
-                        lecture.data 'lecture', lect
+                        localforage.setItem lect.number + '-' + lect.placement, lect
                         lectures.append lecture
-
+                                    
+                    $('#lectures').bootstrapTable 'resetView'
+                    $('#lectures_selected').bootstrapTable 'resetView'
 
         searchLecture = (q) ->
             lectures.html ''
@@ -96,9 +109,11 @@ jQuery ->
                         lect = lect.fields
 
                         lecture = getLectureRow lect
-                        lecture.data 'lecture', lect
+                        localforage.setItem lect.number + '-' + lect.placement, lect
                         lectures.append lecture
-
+                    
+                    $('#lectures').bootstrapTable 'resetView'
+                    $('#lectures_selected').bootstrapTable 'resetView'
 
         search_input.keyup (e) ->
             if e.keyCode == 13
@@ -164,16 +179,18 @@ jQuery ->
                 'l': added_lectures.length
                 'c': current_credit
             }
-            
-            console.log t
 
             $('#current_credit').text t
+            $('#lectures_selected').bootstrapTable 'resetView'
         
         $(window).resize ->
             timetable.text ''
             for lec, index in added_lectures
                 drawLecture lec['lecture'], lec['cell_length'], lec['isTemp'], index
-        
+            
+            $('#lectures').bootstrapTable 'resetView'
+            $('#lectures_selected').bootstrapTable 'resetView'
+
         days = ['월', '화', '수', '목', '금', '토']
         parseLecturePos = (lecture, isTemp) ->
             lect_dp = lecture.dayAndPeriod
@@ -186,17 +203,17 @@ jQuery ->
                 day = days.indexOf(dp[0])
                 
                 if (dp[1].search '-') is -1
-                    period_start = dp[1][0]
+                    period_start = parseInt dp[1]
                     period_end = period_start
                 else
                     period = dp[1].split '-'
                     period_start = period[0]
-                    period_end = period[1][0]
+                    period_end = parseInt period[1]
                  
                 lect_info = [day, period_start, period_end]
 
                 start_cell = $('td[data-pos=' + day + '-' + period_start + ']')
-
+                
                 if isTemp == false
                     full = start_cell.data 'full'
                     if full is undefined or full is false
@@ -205,7 +222,17 @@ jQuery ->
                         alert '해당 시간대에 강의가 이미 존재합니다!'
                         return
 
-                lect_length = if period_start == period_end then 1 else period_end - period_start + 1
+                    if period_start != period_end
+                        end_cell = $('td[data-pos=' + day + '-' + period_end + ']')
+
+                        efull = end_cell.data 'full'
+                        if efull is undefined or efull is false
+                            end_cell.data 'full', true
+                        else
+                            alert '해당 시간대에 강의가 이미 존재합니다!'
+                            return
+
+                lect_length = period_end - period_start + 1
                 cl = {
                     'start_cell': start_cell
                     'length': lect_length
@@ -216,6 +243,8 @@ jQuery ->
 
         addLectureToTable = (lecture) ->
             cell_length = parseLecturePos lecture, false
+            if cell_length is undefined
+                return
 
             _lec = {
                 'lecture': lecture
@@ -225,49 +254,52 @@ jQuery ->
 
             added_lectures.push _lec
 
-
-#        loadDept cols_etc.val(), 'E'
-        loadDept cols_major.val(), 'M'
-
-        cols_major.change ->
-            loadDept $(this).val(), 'M'
-
-        depts_major.change ->
-            loadLecture $(this).val()
-
-        cols_etc.change ->
-            loadDept $(this).val(), 'E'
-
-        depts_etc.change ->
-            loadLecture $(this).val()
-
-        $('#tab_major').click ->
-            loadLecture depts_major.val()
-
-        $('#tab_etc').click ->
-            loadLecture depts_etc.val()
-
         $('#lectures').bootstrapTable
             height: 250
 
         $('#lectures_selected').bootstrapTable
             height: 250
 
-        $('#lectures_selected').css 'margin-top', '-42px'
+        #loadDept cols_etc.val(), 'E'
+        loadDept cols_major.val(), 'M'
 
-        clicked_lect = null
+        cols_major.change ->
+            loadDept $(this).val(), 'M'
+
+        depts_major.change ->
+            loadLecture $(this).val(), ''
+
+        cols_etc.change ->
+            loadDept $(this).val(), 'E'
+
+        depts_etc.change ->
+            if $('option:selected', cols_etc).closest('optgroup').index() == 0
+                loadLecture $(this).val(), 'A'
+            else
+                loadLecture $(this).val(), 'S'
+
+        $('#tab_major').click ->
+            loadLecture depts_major.val(), ''
+
+        $('#tab_etc').click ->
+            if depts_etc.children().length == 0
+                loadDept cols_etc.val(), 'E'
+            else
+                loadLecture depts_etc.val(), 'A'
+
+        lectures.on 'click', 'tr.lecture a', (e) ->
+            e.stopPropagation()
+
         lectures.on 'click', 'tr.lecture', (e) ->
-            clicked_lect = $(this).data 'lecture'
-            addLectureToTable clicked_lect, false
+            localforage.getItem $(this).attr('id'), (err, lect) ->
+                addLectureToTable lect, false
 
-        hovered_lect = null
         lectures.on 'mouseover', 'tr.lecture', (e) ->
-            hovered_lect = $(this).data 'lecture'
-            lec_pos = parseLecturePos hovered_lect, true
-            drawLecture hovered_lect, lec_pos, true, null
+            localforage.getItem $(this).attr('id'), (err, lect) ->
+                lec_pos = parseLecturePos lect, true
+                drawLecture lect, lec_pos, true, null
 
         lectures.on 'mouseout', 'tr.lecture', (e) ->
-            hovered_lect = null
             $('div.temp_lecture').each ->
                 $(this).remove()
 

@@ -1,4 +1,6 @@
-Django==1.6.5
+beautifulsoup4==4.3.2
+Django==1.7
+django-debug-toolbar==1.2.1
 django-compressor==1.4
 django-watson==latest
 requests==latest

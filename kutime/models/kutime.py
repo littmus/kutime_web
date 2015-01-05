@@ -33,7 +33,7 @@ class College(models.Model):
 class Department(models.Model):
     col = models.ForeignKey(College)
     
-    number = models.CharField(max_length=4, primary_key=True)
+    number = models.CharField(max_length=4)
     name = models.CharField(max_length=50)
 
     class Meta:

@@ -2,14 +2,15 @@
 
 {% load staticfiles %}
 
+
 {% block cssfiles %}
-<link rel="stylesheet" href="{% static "css/bootstrap-table.css" %}" type="text/css" />
+<!--<link rel="stylesheet" href="{% static "css/bootstrap-table.css" %}" type="text/css" />-->
 <link rel="stylesheet" href="{% static "css/index.css" %}" type="text/css" />
 {% endblock %}
 
 {% block jsfiles %}
 <script type="text/javascript" src="{% static "js/Object.observe.poly.js" %}" charset="utf-8"></script>
-<script type="text/javascript" src="{% static "js/bootstrap-table.js" %}" charset="utf-8"></script>
+<!--<script type="text/javascript" src="{% static "js/bootstrap-table.js" %}" charset="utf-8"></script>-->
 <script type="text/coffeescript" src="{% static "coffee/index.coffee" %}" charset="utf-8"></script>
 {% endblock %}
 
@@ -40,6 +41,7 @@
                                 <th>인원제한</th>
                                 <th>대기</th>
                                 <th>교환학생</th>
+                                <th>기타</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -62,6 +64,7 @@
                                 <th>인원제한</th>
                                 <th>대기</th>
                                 <th>교환학생</th>
+                                <th>기타</th>
                             </tr>
                         </thead>
                         <tbody></tbody>

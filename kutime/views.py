@@ -40,7 +40,7 @@ def dept(request, col_num):
     data = None
     if col_num is not None:
         list_dept = Department.objects.filter(col__number=col_num)
-        data = serializers.serialize('json', list_dept, fields=('name'))
+        data = serializers.serialize('json', list_dept, fields=('name', 'number'))
          
     return JsonResponse(data)
 
@@ -48,7 +48,13 @@ def dept(request, col_num):
 def lec(request, dept_num):
     data = None
     if dept_num is not None:
-        list_lec = Lecture.objects.filter(dept__pk=dept_num)
+        if dept_num[0] in ['A', 'S']:
+            campus = dept_num[0]
+            num = dept_num[1:]
+            list_lec = Lecture.objects.filter(col__campus=campus, dept__number=num)
+        else:
+            list_lec = Lecture.objects.filter(dept__number=dept_num)
+
         data = serializers.serialize('json', list_lec)
 
     return JsonResponse(data)
