@@ -8,6 +8,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.core import serializers
 from django.views.decorators.csrf import csrf_exempt
+import watson
 
 from kutime.models.kutime import *
 
@@ -31,7 +32,7 @@ def index(request):
             'cols_major_sejong': list_col_major_sejong,
             'cols_etc_anam': list_col_etc_anam,
             'cols_etc_sejong': list_col_etc_sejong,
-            'timetable_range': range(12),
+            'timetable_range': range(1, 13),
         }
     )
 
@@ -60,26 +61,30 @@ def lec(request, dept_num):
     return JsonResponse(data)
 
 @csrf_exempt
-def search(request, q):
-    import watson
-    data = None
-    if q is not None:
-        if u'교시' in q:
-            pass
+def search(request):
+    if request.method == 'GET':
+        data = None
+        q = request.GET.get('q', None)
 
-        if 'LP' in q:
-            q = q.replace('LP', 'L-P')
-            if u'관' in q:
-                q = q.replace(u'관', '')
+        if q is not None:
+            if u'교시' in q:
+                pass
+
+            if 'LP' in q:
+                q = q.replace('LP', 'L-P')
+                if u'관' in q:
+                    q = q.replace(u'관', '')
 #        for _q in q.split(','):
 #            if q.endswith(u'교시'):
-        #result = [s.object for s in watson.search(q)]
-        """ TODO
-            - 검색어 유형 따라 필터 적용
-              ex) 5교시 -> dayAndPeriod 에서만 검색
-        """
-        result = watson.filter(Lecture, q)
-        data = serializers.serialize('json', result)
-    
-    return JsonResponse(data)
+            #result = [s.object for s in watson.search(q)]
+            """ TODO
+                - 검색어 유형 따라 필터 적용
+                  ex) 5교시 -> dayAndPeriod 에서만 검색
+            """
+            result = watson.filter(Lecture, q)
+            data = serializers.serialize('json', result)
+        
+        return JsonResponse(data)
+    else:
+        return HttpResponse(status=404)
 

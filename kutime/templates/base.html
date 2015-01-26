@@ -4,11 +4,14 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="keywords" content="고려대학교,고려대,고대,시간표,korea univ,timetable,수강 신청,sugang,kutime">
-		<title>KUTIME_WEB</title>
+		<title>고려대학교 시간표</title>
 		
 	    {% load staticfiles %}
-		{% load compress %} 
-       	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.1/flatly/bootstrap.min.css" type="text/css" />
+		{% load compress %}
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.1/paper/bootstrap.min.css" />
+<!--        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.2/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.2.1/css/material.css" />
+       	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.1/flatly/bootstrap.min.css" type="text/css" />-->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.5.0/bootstrap-table.min.css" type="text/css" />
 		{% compress css %}
 		<link rel="stylesheet" href="{% static "css/base.css" %}" type="text/css" />
@@ -23,6 +26,7 @@
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.5.0/locale/bootstrap-table-ko-KR.min.js" charset="utf-8"></script>
         <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/localforage/1.2.0/localforage.min.js"></script>
 		{% compress js %}
+        <script type="text/javascript" src="{% static "js/jQuery.browser.mobile.js" %}"></script>
 		{% block jsfiles %}
 		{% endblock %}
 		{% endcompress %}
@@ -32,7 +36,42 @@
         <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
 			<div class="container">
                 <div class="navbar-header">
-					<a class="navbar-brand" href="/">KUTIME_WEB</a>
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar_menu">
+                        <span class="sr-only">Toggle Menu</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+					<a class="navbar-brand" href="/">고려대학교 시간표</a>
+                </div>
+                <div class="collapse navbar-collapse" id="navbar_menu">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">메뉴 <span class="caret"></span></a>
+                            <ul class="dropdown-menu" role="menu">
+                                <li>
+                                    <a href="#" id="menu_save">
+                                        저장 <span class="glyphicon glyphicon-floppy-disk pull-right"></span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu_clear">
+                                        삭제 <span class="glyphicon glyphicon-trash pull-right"></span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu_download">
+                                        다운로드 <span class="glyphicon glyphicon-save pull-right"></span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu_share">
+                                        공유 <span class="glyphicon glyphicon-share pull-right"></span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
                 </div>
 			</div>
 		</div>
@@ -49,11 +88,10 @@
             </div>
         </footer>
 	</body>
-    <!-- UserVoice JavaScript SDK (only needed once on a page) -->
-<script>(function(){var uv=document.createElement('script');uv.type='text/javascript';uv.async=true;uv.src='//widget.uservoice.com/AdyOzZSgY2Zu6jaqYbKTA.js';var s=document.getElementsByTagName('script')[0];s.parentNode.insertBefore(uv,s)})()</script>
 
-<!-- A tab to launch the Classic Widget -->
+<script>(function(){var uv=document.createElement('script');uv.type='text/javascript';uv.async=true;uv.src='//widget.uservoice.com/AdyOzZSgY2Zu6jaqYbKTA.js';var s=document.getElementsByTagName('script')[0];s.parentNode.insertBefore(uv,s)})()</script>
 <script>
+if (jQuery.browser.mobile != true) {
 UserVoice = window.UserVoice || [];
 UserVoice.push(['showTab', 'classic_widget', {
   mode: 'feedback',
@@ -65,6 +103,7 @@ UserVoice.push(['showTab', 'classic_widget', {
   tab_position: 'middle-left',
   tab_inverted: false
 }]);
+}
 </script>
 <script>
 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){

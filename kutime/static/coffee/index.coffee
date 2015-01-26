@@ -1,23 +1,158 @@
 # lo-dash custom template delimiters
 _.templateSettings.interpolate = /{{([\s\S]+?)}}/g
 
+Array.prototype.clear = ->
+    while this.length > 0
+        this.pop()
+
+collision = (div1, div2) ->
+    x1 = div1.offset().left
+    y1 = div1.offset().top
+    h1 = div1.outerHeight true
+    w1 = div1.outerWidth true
+    b1 = y1 + h1
+    r1 = x1 + w1
+
+    x2 = div2.offset().left
+    y2 = div2.offset().top
+    h2 = div2.outerHeight true
+    w2 = div2.outerWidth true
+    b2 = y2 + h2
+    r2 = x2 + w2
+
+    if b1 < y2 or y1 > b2 or r1 < x2 or x1 > r2
+        return false
+    return true
+
 jQuery ->
-#   $.extend $.fn.bootstrapTable.defaults,
-#        formatNoMatches: ->
-#            '강의가 없습니다.'
+   $.extend $.fn.bootstrapTable.defaults,
+        formatNoMatches: ->
+            '강의가 없습니다.'
 
     lecture_template = $('<tr class="lecture"></tr>')
     td = $('<td></td>')
     lect_template = $('<div class="lecture_timetable"></div>')
     span_template = $('<span></span>')
     option_template = $('<option></option>')
+    
+    added_lectures = []
+
+    # for load/save ... wtf
+    pure_lectures = []
+    
+    saved = false
+    save_lecture = (check) ->
+        save = false
+        if check
+            save = confirm '현재 시간표를 저장할까요?'
+
+        if save or not check
+            saved = true
+            localforage.setItem 'saved_lectures', pure_lectures, (err, value) ->
+                if not _.isNull err
+                    console.log err
+        else
+            localforage.removeItem 'saved_lectures', (err) ->
+                if not _.isNull err
+                    console.log err
+
+    $(window).on
+        load: (e) ->
+            saved_lectures = localforage.getItem 'saved_lectures', (err, value) ->
+                if not _.isNull err
+                    console.log err
+
+                if not _.isNull value
+                    load = confirm '저장된 시간표를 불러올까요?'
+                    if load
+                        for lec, index in value
+                            addLectureToTable lec
+                    else
+                        localforage.removeItem 'saved_lectures', (err) ->
+                            if not _.isNull err
+                                console.log err
+
+        beforeunload: (e) ->
+            if not saved
+                return '시간표를 저장하지 않고 종료하시겠어요?'
+            
+
+    days = ['월', '화', '수', '목', '금', '토']
+    parseLecturePos = (lecture, isTemp) ->
+        lect_dp = lecture.dayAndPeriod
+        lect_dp = lect_dp.split ','
+
+        cell_length = []
+
+        for dp in lect_dp
+            temp_collision = false
+
+            dp = dp.split '('
+            day = days.indexOf(dp[0])
+            
+            if (dp[1].search '-') is -1
+                period_start = parseInt dp[1]
+                period_end = period_start
+            else
+                period = dp[1].split '-'
+                period_start = period[0]
+                period_end = parseInt period[1]
+             
+            lect_info = [day, period_start, period_end]
+
+            start_cell = $('td[data-pos=' + day + '-' + period_start + ']')
+            
+#            if isTemp == false
+            full = start_cell.data 'full'
+            if full is undefined or full is false
+                if not isTemp
+                    start_cell.data 'full', true
+            else
+                if isTemp
+                    temp_collision = true
+                else
+                    alert '해당 시간대에 강의가 이미 존재합니다!'
+                    return
+
+            if period_start != period_end
+                end_cell = $('td[data-pos=' + day + '-' + period_end + ']')
+                
+                efull = end_cell.data 'full'
+                if efull is undefined or efull is false
+                    if not isTemp
+                        end_cell.data 'full', true
+                else
+                    if isTemp
+                        temp_collision = true
+                    else
+                        alert '해당 시간대에 강의가 이미 존재합니다!'
+                        return
+
+            lect_length = period_end - period_start + 1
+            cl = {
+                'start_cell': start_cell
+                'length': lect_length
+                'collision': temp_collision
+            }
+            cell_length.push cl
+
+        return cell_length
+
+    addLectureToTable = (lecture) ->
+        cell_length = parseLecturePos lecture, false
+        if cell_length is undefined
+            return
+
+        _lec = {
+            'lecture': lecture
+            'cell_length': cell_length
+            'isTemp': false
+        }
+        
+        pure_lectures.push lecture
+        added_lectures.push _lec
 
     $(document).ready ->
-        v = localforage.getItem 'ip', (value) ->
-            if value is null
-                v = '127.0.0.1'
-                localforage.setItem 'ip', v
-        
         cols_major = $('#cols_major')
         depts_major = $('#depts_major')
         cols_etc = $('#cols_etc')
@@ -27,6 +162,25 @@ jQuery ->
         timetable = $('#timetable')
         search_input = $('#search_input')
         
+        $('#menu_save').on
+            click: (e) ->
+                save_lecture true
+        
+        $('#menu_clear').on
+            click: (e) ->
+                if confirm '시간표를 삭제할까요?'
+                    added_lectures.clear()
+                    pure_lectures.clear()
+                    localforage.removeItem 'saved_lectures', (err) ->
+                        if not _.isNull err
+                            console.log err
+
+        $('#menu_download').on
+            click: (e) ->
+        
+        $('#menu_share').on
+            click: (e) ->
+
         getLectureRow = (lect) ->
             lecture = lecture_template.clone()
             lecture.attr 'id', lect.number + '-' + lect.placement
@@ -102,7 +256,9 @@ jQuery ->
             lectures.html ''
             ret = $.ajax
                 type: 'get'
-                url: 'search/' + q + '/'
+                url: 'search/'
+                data:
+                    q: q
                 dataType: 'json'
                 success: (retData) ->
                     for lect in retData
@@ -123,7 +279,6 @@ jQuery ->
         lect_div_base_width = 
         lect_div_base_height = 
         
-        added_lectures = []
         color_set = ['#1abc9c', '#2ecc71', '#3498db', '#9b59b6', '#34495e']
         used_color_set = []
         drawLecture = (lecture, cell_length, isTemp, index) ->
@@ -137,13 +292,16 @@ jQuery ->
                 lect_div = lect_template.clone()
                 if isTemp
                     lect_div.addClass 'temp_lecture'
-                    lect_div.css 'background-color', 'grey'
+                    if cl.collision
+                        lect_div.css 'background-color', '#f44336'
                 
                 lect_div.css 'position', 'absolute'
                 lect_div.css 'top', start_pos.top
                 lect_div.css 'left', start_pos.left - 15
                 lect_div.width lect_div_width
                 lect_div.height lect_div_height
+
+                #lect_div.attr 'id', lecture.number + lecture.placement
 
                 span = span_template.clone()
                 txt = lecture.title
@@ -191,68 +349,6 @@ jQuery ->
             $('#lectures').bootstrapTable 'resetView'
             $('#lectures_selected').bootstrapTable 'resetView'
 
-        days = ['월', '화', '수', '목', '금', '토']
-        parseLecturePos = (lecture, isTemp) ->
-            lect_dp = lecture.dayAndPeriod
-            lect_dp = lect_dp.split ','
-
-            cell_length = []
-
-            for dp in lect_dp
-                dp = dp.split '('
-                day = days.indexOf(dp[0])
-                
-                if (dp[1].search '-') is -1
-                    period_start = parseInt dp[1]
-                    period_end = period_start
-                else
-                    period = dp[1].split '-'
-                    period_start = period[0]
-                    period_end = parseInt period[1]
-                 
-                lect_info = [day, period_start, period_end]
-
-                start_cell = $('td[data-pos=' + day + '-' + period_start + ']')
-                
-                if isTemp == false
-                    full = start_cell.data 'full'
-                    if full is undefined or full is false
-                        start_cell.data 'full', true
-                    else
-                        alert '해당 시간대에 강의가 이미 존재합니다!'
-                        return
-
-                    if period_start != period_end
-                        end_cell = $('td[data-pos=' + day + '-' + period_end + ']')
-
-                        efull = end_cell.data 'full'
-                        if efull is undefined or efull is false
-                            end_cell.data 'full', true
-                        else
-                            alert '해당 시간대에 강의가 이미 존재합니다!'
-                            return
-
-                lect_length = period_end - period_start + 1
-                cl = {
-                    'start_cell': start_cell
-                    'length': lect_length
-                }
-                cell_length.push cl
-
-            return cell_length
-
-        addLectureToTable = (lecture) ->
-            cell_length = parseLecturePos lecture, false
-            if cell_length is undefined
-                return
-
-            _lec = {
-                'lecture': lecture
-                'cell_length': cell_length
-                'isTemp': false
-            }
-
-            added_lectures.push _lec
 
         $('#lectures').bootstrapTable
             height: 250
@@ -305,16 +401,19 @@ jQuery ->
 
         # re-add dbclick for mobile support
 
-
-        timetable.on 'click', 'div.lecture_timetable', (e) ->
-            ret = confirm '강의를 삭제할까요?'
-            if ret is true
-                index = $(this).data 'index'
+        deleteLecture = (selected_lec) ->
+            if confirm '강의를 삭제할까요?'
+                index = selected_lec.data 'index'
                 lec = added_lectures[index]
                 for cl in lec.cell_length
                     cl.start_cell.data 'full', false
 
+                pure_lectures.splice index, 1
                 added_lectures.splice index, 1
 
+        timetable.on 'click', 'div.lecture_timetable', (e) ->
+            deleteLecture $(this)
+
         lectures_selected.on 'click', 'tr.lecture', (e) ->
-            #
+            #selected_lec = $('div.lecture_timetable')
+            #deleteLecture selected_lec

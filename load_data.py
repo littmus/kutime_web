@@ -19,7 +19,10 @@ URL_DEPT_MAJOR = 'http://sugang.korea.ac.kr/lecture/LecDeptPopup.jsp?frm=frm_ms&
 URL_DEPT_ETC = 'http://sugang.korea.ac.kr/lecture/LecDeptPopup.jsp?frm=frm_ets&colcd=%(colcd)s&deptcd=%(deptcd)s&dept=%(dept)s'
 
 RE_DEPT = re.compile(u'el.style.color = "black";\r\n\t\t\tel.selected = "(true|)";  \r\n            el.value ="(?P<num>\d{2,4})";\r\n            el.text = "(?P<name>[\(\)\uac00-\ud7a3\w ·]+)";', re.UNICODE)
-RE_DEPT_ETC = re.compile(u'el.style.color = "black";\r\n            el.value ="(?P<num>\d{2,4})";\r\n            el.text = "(?P<name>[\(\)\uac00-\ud7a3\w ·]+)";', re.UNICODE)
+
+# 세종 캠퍼스 과목중에 빨간색으로 된 dept에 속한 과목들이 있음 (심층 영어)
+#RE_DEPT_ETC = re.compile(u'el.style.color = "black";\r\n            el.value ="(?P<num>\d{2,4})";\r\n            el.text = "(?P<name>[\(\)\uac00-\ud7a3\w ·]+)";', re.UNICODE)
+RE_DEPT_ETC = re.compile(u'el.value ="(?P<num>\d{2,4})";\r\n            el.text = "(?P<name>[\(\)\uac00-\ud7a3\w ·]+)";', re.UNICODE)
 
 RE_DC = re.compile(u'(?P<day>[\uac00-\ud7a3]{1}\([\d-]+\)) (?P<classroom>[\uac00-\ud7a3\w\d\- ]*(?=[\uac00-\ud7a3\w\d\- ])\d\S)', re.UNICODE)
 RE_DC_DAYONLY = re.compile(u'(?P<day>[\uac00-\ud7a3]{1}\([\d-]+\))', re.UNICODE)
@@ -71,7 +74,7 @@ def index(_type, campus=None):
         if not DEBUG and not created:
             current_col.save()
 
-        print name
+        #print name
 
         if _type == MAJOR:
             dept_url = URL_DEPT % {'colcd':number, 'deptcd':'', 'dept':'dept', 'year':YEAR, 'term':SEMESTER}
@@ -109,9 +112,7 @@ def index(_type, campus=None):
             
             current_dept, created = Department.objects.get_or_create(col=current_col, number=dept_num, name=dept_name)
 
-            if not DEBUG and not created:
-                current_dept.save()
-            
+                        
             params = {
                 'yy': YEAR,
                 'tm': SEMESTER,
@@ -130,7 +131,10 @@ def index(_type, campus=None):
             table = lec_soup.find_all('table')[TABLE_INDEX]
             if u'검색결과가' in table.text:
                 continue
-                
+            else:
+                if not DEBUG and not created:
+                    current_dept.save()
+
             try:
                 lec_info = None
                 for lec_row in table.find_all('tr')[3::2]:
@@ -235,7 +239,7 @@ def index(_type, campus=None):
 def run():
     index(MAJOR)
     index(ETC, ANAM)
-    #index(ETC, SEJONG)
+    index(ETC, SEJONG)
     #index(GRADUATE)
 
     for error in global_error_list:

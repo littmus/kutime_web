@@ -10,7 +10,6 @@
 
 {% block jsfiles %}
 <script type="text/javascript" src="{% static "js/Object.observe.poly.js" %}" charset="utf-8"></script>
-<!--<script type="text/javascript" src="{% static "js/bootstrap-table.js" %}" charset="utf-8"></script>-->
 <script type="text/coffeescript" src="{% static "coffee/index.coffee" %}" charset="utf-8"></script>
 {% endblock %}
 
@@ -74,9 +73,10 @@
         </div>
     </div>
     <div class="col-xs-12 col-md-2">
-        <ul class="nav nav-tabs nav-justified" role="tablist">
+        <ul id="category" class="nav nav-tabs nav-justified" role="tablist">
             <li class="active"><a href="#lecture_major" role="tab" data-toggle="tab" id="tab_major">전공</a></li>
             <li><a href="#lecture_etc" role="tab" data-toggle="tab" id="tab_etc">교양</a></li>
+            <!--<li><a href="#lecture_graduated" role="tab" data-toggle="tab" id="tab_graduated">대학원</a></li>-->
         </ul>
         <div class="tab-content">
             <div class="tab-pane active" id="lecture_major">
@@ -129,6 +129,14 @@
                     </div>
                 </form>
             </div>
+            <div class="tab-pane" id="lecture_graduated">
+                <form role="form" style="margin-top:15px;">
+                    <div class="form-group">
+                        <select id="cols_graduated" class="form-control">
+                        </select>
+                    </div>
+                </form>
+            </div>
         </div>
         <input type="text" placeholder="검색" id="search_input" class="form-control" />
     </div>
@@ -141,9 +149,10 @@
             {% for d in " 월화수목금토" %}
                 <td>{{ d }}</td>
             {% endfor %}
+            </tr>
             {% for i in timetable_range %}
             <tr>
-                <td class="col-md-1">{{ i }} 교시</td>
+                <td class="col-md-1 time">{{ i }} 교시</td>
                 {% for d in "012345" %}
                 <td data-pos="{{d}}-{{i}}"></td>
                 {% endfor %}
