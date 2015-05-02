@@ -87,4 +87,12 @@ def search(request):
         return JsonResponse(data)
     else:
         return HttpResponse(status=404)
+"""
+from selenium import webdriver
 
+def capture(request):
+    if request.method == 'POST':
+        drvier = webdriver.PhantomJS()
+    else:
+        return HttpResponse(status=404)
+"""

@@ -17,6 +17,7 @@ URL_ETC = 'http://sugang.korea.ac.kr/lecture/LecEtcSub.jsp'
 URL_GRADUATE = 'http://sugang.korea.ac.kr/lecture/LecGradMajorSub.jsp'
 URL_DEPT_MAJOR = 'http://sugang.korea.ac.kr/lecture/LecDeptPopup.jsp?frm=frm_ms&colcd=%(colcd)s&deptcd=%(deptcd)s&dept=%(dept)s&year=%(year)s&term=%(term)s'
 URL_DEPT_ETC = 'http://sugang.korea.ac.kr/lecture/LecDeptPopup.jsp?frm=frm_ets&colcd=%(colcd)s&deptcd=%(deptcd)s&dept=%(dept)s'
+URL_DEPT_GRADUATE = 'http://sugang.korea.ac.kr/lecture/LecDeptPopup.jsp?frm=frm_gms&colcd=%(colcd)s&deptcd=%(deptcd)s&dept=%(dept)s'
 
 RE_DEPT = re.compile(u'el.style.color = "black";\r\n\t\t\tel.selected = "(true|)";  \r\n            el.value ="(?P<num>\d{2,4})";\r\n            el.text = "(?P<name>[\(\)\uac00-\ud7a3\w ·]+)";', re.UNICODE)
 
@@ -57,6 +58,7 @@ def index(_type, campus=None):
         TABLE_INDEX = 7
     elif _type == GRADUATE:
         URL = URL_GRADUATE
+        URL_DEPT = URL_DEPT_GRADUATE
         TABLE_INDEX = -1
 
     r = requests.get(URL)
@@ -70,6 +72,9 @@ def index(_type, campus=None):
         number = col['value']
         name = col.text.strip()
         
+        if DEBUG:
+            print number, name
+
         current_col, created = College.objects.get_or_create(number=number, name=name, type=_type, campus=campus)
         if not DEBUG and not created:
             current_col.save()
@@ -81,7 +86,8 @@ def index(_type, campus=None):
         elif _type == ETC:
             dept_url = URL_DEPT % {'colcd':number, 'deptcd':'', 'dept':'dept'}
         elif _type == GRADUATE:
-            pass
+            dept_url = URL_DEPT % {'colcd':number, 'deptcd':'', 'dept':'dept'}
+            #pass
         
         if DEBUG:
             print dept_url
@@ -95,13 +101,15 @@ def index(_type, campus=None):
         elif _type == ETC: 
             m = [m.groupdict() for m in RE_DEPT_ETC.finditer(depts.text)]
         elif _type == GRADUATE:
-            pass
+            m = [m.groupdict() for m in RE_DEPT.finditer(depts.text)]
 
     	if len(m) == 0:
             if _type == MAJOR:
                 continue
             elif _type == ETC:
                 m.append({'num': '_'+number, 'name': name,})
+            elif _type == GRADUATE:
+                continue
 
         for dept in m:
             dept_num = str(dept['num'])

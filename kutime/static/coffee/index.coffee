@@ -4,7 +4,7 @@ _.templateSettings.interpolate = /{{([\s\S]+?)}}/g
 Array.prototype.clear = ->
     while this.length > 0
         this.pop()
-
+"""
 collision = (div1, div2) ->
     x1 = div1.offset().left
     y1 = div1.offset().top
@@ -23,7 +23,7 @@ collision = (div1, div2) ->
     if b1 < y2 or y1 > b2 or r1 < x2 or x1 > r2
         return false
     return true
-
+"""
 jQuery ->
    $.extend $.fn.bootstrapTable.defaults,
         formatNoMatches: ->
@@ -73,7 +73,7 @@ jQuery ->
                                 console.log err
 
         beforeunload: (e) ->
-            if not saved
+            if not saved and pure_lectures.length > 0
                 return '시간표를 저장하지 않고 종료하시겠어요?'
             
 
@@ -107,13 +107,20 @@ jQuery ->
             if full is undefined or full is false
                 if not isTemp
                     start_cell.data 'full', true
-            else
+            else if full is true
                 if isTemp
                     temp_collision = true
                 else
                     alert '해당 시간대에 강의가 이미 존재합니다!'
                     return
-
+            
+            lect_length = period_end - period_start + 1
+            cl = {
+                'start_cell': start_cell
+                'length': lect_length
+                'collision': temp_collision
+            }
+            
             if period_start != period_end
                 end_cell = $('td[data-pos=' + day + '-' + period_end + ']')
                 
@@ -121,19 +128,15 @@ jQuery ->
                 if efull is undefined or efull is false
                     if not isTemp
                         end_cell.data 'full', true
-                else
+                else if efull is true
                     if isTemp
                         temp_collision = true
                     else
                         alert '해당 시간대에 강의가 이미 존재합니다!'
                         return
 
-            lect_length = period_end - period_start + 1
-            cl = {
-                'start_cell': start_cell
-                'length': lect_length
-                'collision': temp_collision
-            }
+                cl['end_cell'] = end_cell
+
             cell_length.push cl
 
         return cell_length
@@ -174,12 +177,19 @@ jQuery ->
                     localforage.removeItem 'saved_lectures', (err) ->
                         if not _.isNull err
                             console.log err
-
+        """
         $('#menu_download').on
             click: (e) ->
-        
+                ret = $.ajax
+                    type: 'post'
+                    url: 'capture/'
+                    #dataType: 'image/png'
+                    success: (ret):
+                        return true
+        """
         $('#menu_share').on
             click: (e) ->
+                return true
 
         getLectureRow = (lect) ->
             lecture = lecture_template.clone()
@@ -407,6 +417,10 @@ jQuery ->
                 lec = added_lectures[index]
                 for cl in lec.cell_length
                     cl.start_cell.data 'full', false
+                    console.log cl.start_cell.data 'full'
+                    if _.has cl, 'end_cell'
+                        cl.end_cell.data 'full', false
+                        console.log cl.end_cell.data 'full'
 
                 pure_lectures.splice index, 1
                 added_lectures.splice index, 1
