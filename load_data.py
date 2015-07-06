@@ -10,7 +10,7 @@ import django
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'kutime.settings'
 django.setup()
-from kutime.models.kutime import *
+from kutime.models import *
 
 URL_MAJOR = 'http://sugang.korea.ac.kr/lecture/LecMajorSub.jsp'
 URL_ETC = 'http://sugang.korea.ac.kr/lecture/LecEtcSub.jsp'
@@ -29,7 +29,7 @@ RE_DC = re.compile(u'(?P<day>[\uac00-\ud7a3]{1}\([\d-]+\)) (?P<classroom>[\uac00
 RE_DC_DAYONLY = re.compile(u'(?P<day>[\uac00-\ud7a3]{1}\([\d-]+\))', re.UNICODE)
 
 YEAR = 2015
-SEMESTER = '1R'
+SEMESTER = '2R'
 """
 1R
 1S
@@ -47,21 +47,24 @@ GRADUATE = 'G'
 DEBUG = False
 global_error_list = []
 
-def index(_type, campus=None):
+session = requests.Session()
+session.mount('http://sugang.korea.ac.kr', requests.adapters.HTTPAdapter(max_retries=10))
+
+def index(_type, campus=None, lang='KOR'):
     if _type == MAJOR:
         URL = URL_MAJOR
         URL_DEPT = URL_DEPT_MAJOR
-        TABLE_INDEX = 5
+        TABLE_INDEX = 0
     elif _type == ETC:
         URL = URL_ETC
         URL_DEPT = URL_DEPT_ETC
-        TABLE_INDEX = 7
+        TABLE_INDEX = 0
     elif _type == GRADUATE:
         URL = URL_GRADUATE
         URL_DEPT = URL_DEPT_GRADUATE
         TABLE_INDEX = -1
 
-    r = requests.get(URL)
+    r = session.get(URL, params={'lang':lang})
     soup = bs(r.content)
     cols = soup.find('select', attrs={'name':'col'})
 
@@ -92,7 +95,7 @@ def index(_type, campus=None):
         if DEBUG:
             print dept_url
         
-        r = requests.get(dept_url)
+        r = session.get(dept_url)
         _soup = bs(r.content)
         depts = _soup.find('script')
 
@@ -102,8 +105,8 @@ def index(_type, campus=None):
             m = [m.groupdict() for m in RE_DEPT_ETC.finditer(depts.text)]
         elif _type == GRADUATE:
             m = [m.groupdict() for m in RE_DEPT.finditer(depts.text)]
-
-    	if len(m) == 0:
+    	
+        if len(m) == 0:
             if _type == MAJOR:
                 continue
             elif _type == ETC:
@@ -119,13 +122,12 @@ def index(_type, campus=None):
                 print dept_name
             
             current_dept, created = Department.objects.get_or_create(col=current_col, number=dept_num, name=dept_name)
-
-                        
             params = {
                 'yy': YEAR,
                 'tm': SEMESTER,
                 'col': number,
-                'dept': dept_num
+                'dept': dept_num,
+                'lang': lang,
             }
 
             if _type == ETC:
@@ -134,75 +136,52 @@ def index(_type, campus=None):
 
                 params['campus'] = '1' if campus == ANAM else '2'
 
-            r = requests.post(URL, params=params)
+            r = session.post(URL, params=params)
             lec_soup = bs(r.content)
-            table = lec_soup.find_all('table')[TABLE_INDEX]
-            if u'검색결과가' in table.text:
+            if lec_soup.find('div', class_='error'):
                 continue
-            else:
-                if not DEBUG and not created:
-                    current_dept.save()
+            
+            table = lec_soup.find_all('table')[TABLE_INDEX]
+            if not DEBUG and not created:
+                current_dept.save()
 
             try:
                 lec_info = None
-                for lec_row in table.find_all('tr')[3::2]:
-                    lec_info = lec_row.find_all('td')[::2]
-                    
-                    if _type == MAJOR: 
+                for lec_row in table.find_all('tr')[1:]:
+                    lec_info = lec_row.find_all('td')
+
+                    if _type == MAJOR:
+                        lec_campus = lec_info.pop(0)
                         if current_col.campus is None:
-                            current_col.campus = ANAM if lec_info[0].text == u'안암' else SEJONG
+                            current_col.campus = ANAM if lec_campus.text == u'안암' else SEJONG
                             current_col.save()
 
-                        lec_num = lec_info[1].text.strip().replace(' ', '')
-                        lec_placement = lec_info[2].text.strip()
-                        lec_comp_div = lec_info[3].text.strip()
-                         
-                        if lec_info[4].find('br') is not None:
-                            lec_title, br, lec_note = lec_info[4].contents
-                            lec_title = unicode(lec_title).strip()
-                            lec_note = unicode(lec_note).strip()
-                        else:
-                            lec_title = lec_info[4].text.strip()
-                            lec_note = ''
+                    lec_num = lec_info[0].text.strip().replace(' ', '')
+                    lec_placement = lec_info[1].text.strip()
+                    lec_comp_div = lec_info[2].text.strip()
 
-                        lec_prof = lec_info[5].text.strip()
-                        credit_time = str(lec_info[6].text.strip()).split('(')
-                        lec_credit = int(credit_time[0])
-                        lec_time = int(credit_time[1][-2])
+                    if lec_info[3].find('br') is not None:
+                        lec_title, br, lec_note = lec_info[3].contents
+                        lec_title = unicode(lec_title).strip()
+                        lec_note = unicode(lec_note).strip()
+                    else:
+                        lec_title = lec_info[3].text.strip()
+                        lec_note = ''
 
-                        lec_date_classroom = lec_info[7].text.strip()
+                    lec_prof = lec_info[4].text.strip()
+                    credit_time = str(lec_info[5].text.strip()).split('(')
+                    lec_credit = int(credit_time[0])
+                    lec_time = int(credit_time[1][:-1])
 
-                        lec_is_english = True if u'(영강)' in lec_title else False
-                        lec_is_relative = False if lec_info[8].text == '' else True
-                        lec_is_limit = False if lec_info[9].text == '' else True
-                        lec_is_waiting = False if lec_info[10].text == '' else True
-                        lec_is_exchange = False if lec_info[11].text == '' else True
+                    lec_date_classroom = lec_info[6].text.strip()
 
-                    elif _type == ETC:
-                        lec_num = lec_info[0].text.strip()
-                        lec_placement = lec_info[1].text.strip()
-                        lec_comp_div = ''
-
-                        if lec_info[2].find('br') is not None:
-                            lec_title, br, lec_note = lec_info[2].contents
-                            lec_title = unicode(lec_title).strip()
-                            lec_note = unicode(lec_note).strip()
-                        else:
-                            lec_title = lec_info[2].text.strip()
-                            lec_note = ''
-
-                        lec_prof = lec_info[3].text.strip()
-                        credit_time = str(lec_info[4].text.strip()).split('(')
-                        lec_credit = int(credit_time[0])
-                        lec_time = int(credit_time[1][-2])
-
-                        lec_date_classroom = lec_info[5].text.strip()
-
-                        lec_is_english = True if u'(영강)' in lec_title else False
-                        lec_is_relative = False if lec_info[6].text == '' else True
-                        lec_is_limit = False if lec_info[7].text == '' else True
-                        lec_is_waiting = False if lec_info[8].text == '' else True
-                        lec_is_exchange = False if lec_info[9].text == '' else True
+                    lec_is_english = True if u'(영강)' in lec_title else False
+                    lec_is_relative = False if lec_info[7].text == '' else True
+                    lec_is_limit = False if lec_info[8].text == '' else True
+                    lec_is_waiting = False if lec_info[9].text == '' else True
+                    lec_is_exchange = False if lec_info[10].text == '' else True
+                    lec_is_self_attend_check = False if lec_info[11].text == '' else True
+                    lec_is_no_supervision = False if lec_info[12].text == '' else True
 
                     lec_date = None
                     lec_classroom = None
@@ -234,20 +213,24 @@ def index(_type, campus=None):
                                 isEnglish=lec_is_english, isRelative=lec_is_relative,
                                 isLimitStudent=lec_is_limit, isWaiting=lec_is_waiting,
                                 isExchange=lec_is_exchange,
+                                isSelfAttendCheck=lec_is_self_attend_check,
+                                isNoSupervision=lec_is_no_supervision,
                                 note=lec_note
                              )
                     if not DEBUG and not created:
                         lecture.save()
 
             except Exception as e:
-                print str(e)
-                global_error_list.append([_type, current_col, current_dept, str(e), sys.exc_info()[2].tb_lineno])
+                err = [_type, current_col, current_dept, str(e), sys.exc_info()[2].tb_lineno]
+                print err
+                global_error_list.append(err)
 
 
 def run():
+    #lang = KOR, ENG
     index(MAJOR)
-    index(ETC, ANAM)
-    index(ETC, SEJONG)
+    index(ETC, campus=ANAM)
+    #index(ETC, SEJONG)
     #index(GRADUATE)
 
     for error in global_error_list:

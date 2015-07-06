@@ -10,7 +10,7 @@ from django.core import serializers
 from django.views.decorators.csrf import csrf_exempt
 import watson
 
-from kutime.models.kutime import *
+from models import *
 
 
 def JsonResponse(json):

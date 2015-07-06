@@ -3,7 +3,7 @@ from django.conf.urls import patterns, include, url
 from django.conf.urls.static import static
 from django.contrib import admin
 
-from models.kutime import *
+from models import *
 admin.autodiscover()
 admin.site.register(College)
 admin.site.register(Department)

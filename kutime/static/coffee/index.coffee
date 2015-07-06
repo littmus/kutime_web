@@ -212,6 +212,8 @@ jQuery ->
             lecture.append td.clone().text if lect.isLimitStudent then '●' else ''
             lecture.append td.clone().text if lect.isWaiting then '●' else ''
             lecture.append td.clone().text if lect.isExchange then '●' else ''
+            lecture.append td.clone().text if lect.isSelfAttendCheck then '●' else ''
+            lecture.append td.clone().text if lect.isNoSupervision then '●' else ''
 
             lecture.append td.clone().text lect.note
             

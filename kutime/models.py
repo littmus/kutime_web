@@ -1,6 +1,5 @@
 #-*- coding:utf-8 -*-
 from django.db import models
-import watson
 
 
 class College(models.Model):
@@ -48,7 +47,6 @@ class DayAndPeriod(object):
     period_end = None
 
     def __init__(self, dayAndPeriod=None):
-        print 'init'
         if dayAndPeriod is not None:
             try:
                 day, period = dayAndPeriod.split('(')
@@ -121,7 +119,7 @@ class Lecture(models.Model):
 
     number = models.CharField(max_length=7)
     placement = models.CharField(max_length=2)
-    comp_div = models.CharField(max_length=20)
+    comp_div = models.CharField(max_length=50)
     title = models.CharField(max_length=200)
     professor = models.CharField(max_length=200)
 
@@ -136,6 +134,8 @@ class Lecture(models.Model):
     isLimitStudent = models.BooleanField(default=True)
     isWaiting = models.BooleanField(default=True)
     isExchange = models.BooleanField(default=True)
+    isSelfAttendCheck = models.BooleanField(default=False)
+    isNoSupervision = models.BooleanField(default=False)
 
     note = models.TextField(null=True)
 
@@ -157,6 +157,4 @@ class Lecture(models.Model):
 
     def __unicode__(self):
         return u'%s - %s' % (self.title, self.professor)
-
-watson.register(Lecture)
 

@@ -37,12 +37,12 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
+    'kutime',
+
     'gunicorn',
     'compressor',
     'watson',
-
-    'kutime',
 )
 
 if DEBUG:
